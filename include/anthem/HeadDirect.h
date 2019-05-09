@@ -23,6 +23,15 @@ namespace direct
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+ast::Formula  makeHeadFormula(const Clingo::AST::Pool &pool, Context &context, RuleContext &ruleContext, ast::VariableStack &variableStack)
+{
+    auto n_args = pool.arguments.size();
+    auto arg1 = pool.arguments.at(0);
+    auto name = arg1.data.get<Clingo::AST::Function>().name;
+
+    throw TranslationException(arg1.location, "pools not yet supported");
+}
+
 ast::Formula makeHeadFormula(const Clingo::AST::Function &function, bool isChoiceRule, Context &context, RuleContext &ruleContext, ast::VariableStack &variableStack)
 {
 	auto predicateDeclaration = context.findOrCreatePredicateDeclaration(function.name, function.arguments.size());
@@ -128,6 +137,11 @@ struct HeadLiteralTranslateToConsequentVisitor
 			throw TranslationException(headLiteral.location, "only terms currently supported in literals in rule head");
 
 		const auto &term = literal.data.get<Clingo::AST::Term>();
+
+		if (term.data.is<Clingo::AST::Pool>()) {
+		    const auto &pool = term.data.get<Clingo::AST::Pool>();
+            return makeHeadFormula(pool, context, ruleContext, variableStack);
+        }
 
 		if (!term.data.is<Clingo::AST::Function>())
 			throw TranslationException(headLiteral.location, "only atoms currently supported in literals in rule head");
