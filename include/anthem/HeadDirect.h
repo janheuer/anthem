@@ -23,15 +23,6 @@ namespace direct
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-ast::Formula  makeHeadFormula(const Clingo::AST::Pool &pool, Context &context, RuleContext &ruleContext, ast::VariableStack &variableStack)
-{
-    auto n_args = pool.arguments.size();
-    auto arg1 = pool.arguments.at(0);
-    auto name = arg1.data.get<Clingo::AST::Function>().name;
-
-    throw TranslationException(arg1.location, "pools not yet supported");
-}
-
 ast::Formula makeHeadFormula(const Clingo::AST::Function &function, bool isChoiceRule, Context &context, RuleContext &ruleContext, ast::VariableStack &variableStack)
 {
 	auto predicateDeclaration = context.findOrCreatePredicateDeclaration(function.name, function.arguments.size());
@@ -89,6 +80,19 @@ ast::Formula makeHeadFormula(const Clingo::AST::Function &function, bool isChoic
 	return ast::ForAll(std::move(parameters), std::move(implies));
 }
 
+ast::Formula  makeHeadFormula(const Clingo::AST::Pool &pool, Context &context, RuleContext &ruleContext, ast::VariableStack &variableStack)
+{
+    ast::And and_;
+    and_.arguments.reserve(pool.arguments.size());
+
+    for (const auto & arg : pool.arguments)
+    {
+        and_.arguments.emplace_back(makeHeadFormula(arg.data.get<Clingo::AST::Function>(), false, context, ruleContext, variableStack));
+    }
+
+    return std::move(and_);
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 struct HeadLiteralTranslateToConsequentVisitor
@@ -139,7 +143,7 @@ struct HeadLiteralTranslateToConsequentVisitor
 		const auto &term = literal.data.get<Clingo::AST::Term>();
 
 		if (term.data.is<Clingo::AST::Pool>()) {
-		    const auto &pool = term.data.get<Clingo::AST::Pool>();
+            const auto &pool = term.data.get<Clingo::AST::Pool>();
             return makeHeadFormula(pool, context, ruleContext, variableStack);
         }
 
