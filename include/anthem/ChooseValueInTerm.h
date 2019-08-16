@@ -312,7 +312,7 @@ struct ChooseValueInTermVisitor
 		return ast::Exists(std::move(parameters), std::move(and_));
 	}
 
-	ast::Formula visit(const Clingo::AST::Pool &pool, const Clingo::AST::Term &term, ast::VariableDeclaration &variableDeclaration, Context &context, RuleContext &ruleContext, const ast::VariableStack &variableStack)
+	ast::Formula visit(const Clingo::AST::Pool &pool, const Clingo::AST::Term &, ast::VariableDeclaration &variableDeclaration, Context &context, RuleContext &ruleContext, const ast::VariableStack &variableStack)
 	{
         ast::VariableDeclarationPointers parameters;
         parameters.reserve(pool.arguments.size());
@@ -320,6 +320,7 @@ struct ChooseValueInTermVisitor
         for (int i = 0; i < static_cast<int>(pool.arguments.size()); i++)
         {
             parameters.emplace_back(std::make_unique<ast::VariableDeclaration>(ast::VariableDeclaration::Type::Body));
+            // TODO: should be Domain::Unknown
             parameters.back()->domain = Domain::Symbolic;
         }
 
