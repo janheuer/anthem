@@ -79,6 +79,21 @@ struct BodyTermTranslateVisitor
 		return ast::Exists(std::move(parameters), std::move(and_));
 	}
 
+    ast::Formula visit(const Clingo::AST::Pool &pool,
+        const Clingo::AST::Literal &literal, const Clingo::AST::Term &term, Context &context,
+        RuleContext &ruleContext, ast::VariableStack &variableStack)
+    {
+        ast::Or or_;
+        or_.arguments.reserve(pool.arguments.size());
+
+        for (const auto & arg : pool.arguments)
+        {
+            or_.arguments.emplace_back(arg.data.accept(BodyTermTranslateVisitor(), literal, term, context, ruleContext, variableStack));
+        }
+
+        return std::move(or_);
+    }
+
 	template<class T>
 	ast::Formula visit(const T &, const Clingo::AST::Literal &,
 		const Clingo::AST::Term &term, Context &, RuleContext &, ast::VariableStack &)
