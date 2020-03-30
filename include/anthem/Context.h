@@ -59,6 +59,14 @@ struct Context
 		return predicateDeclarations.back().get();
 	}
 
+	ast::PredicateDeclaration *findOrCreatePrimePredicateDeclaration(const char *name, size_t arity, Context &context)
+	{
+        std::string primeName = name;
+        primeName.append("_");
+
+	    return context.findOrCreatePredicateDeclaration(&primeName[0], arity);
+	}
+
 	std::optional<ast::FunctionDeclaration *> findFunctionDeclaration(const char *name, size_t arity)
 	{
 		const auto matchesExistingFunctionDeclaration =
