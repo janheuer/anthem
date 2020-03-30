@@ -301,6 +301,8 @@ void translateHereAndThere(std::vector<ast::ScopedFormula> &&scopedFormulasA,
 	output::PrintContext printContext(context);
 	auto &stream = context.logger.outputStream();
 
+    std::vector<ast::ScopedFormula> primeAxioms;
+
 	switch (context.semantics)
 	{
 		case Semantics::ClassicalLogic:
@@ -308,6 +310,49 @@ void translateHereAndThere(std::vector<ast::ScopedFormula> &&scopedFormulasA,
 			break;
 		case Semantics::LogicOfHereAndThere:
 			context.logger.log(output::Priority::Warning) << "output semantics: logic of here-and-there";
+
+			auto size = context.predicateDeclarations.size();
+			for (int i = 0; i < static_cast<int>(size); i++)
+            {
+			    // create primed version of predicate
+                auto primePredicateDeclaration = context.findOrCreatePrimePredicateDeclaration(&(context.predicateDeclarations[i]->name)[0], context.predicateDeclarations[i]->parameters.size(), context);
+
+                // create prime axioms (p -> p')
+
+                // get original predicate and prime predicate
+                ast::Predicate predicate(context.predicateDeclarations[i].get());
+                ast::Predicate primePredicate(primePredicateDeclaration);
+
+                // two cases: 1) predicate with no parameters
+                //            2) predicate with parameters
+                if (primePredicateDeclaration->parameters.empty())
+                {
+                    // without parameters just simple implication p -> p'
+                    ast::Implies primeAxiom = ast::Implies(std::move(predicate), std::move(primePredicate));
+                    ast::ScopedFormula scopedFormula = ast::ScopedFormula(std::move(primeAxiom), {});
+                    primeAxioms.emplace_back(std::move(scopedFormula));
+                }
+                else
+                {
+                    // when p has parameters we need the universal closure over all parameters
+                    // forall X1,..,XN. p(X1,..,XN) -> p'(X1,..,XN)
+                    ast::VariableDeclarationPointers parameters;
+                    parameters.reserve(primePredicateDeclaration->parameters.size());
+
+                    for (int j = 0; j < static_cast<int>(primePredicateDeclaration->parameters.size()); j++) {
+                        parameters.emplace_back(std::make_unique<ast::VariableDeclaration>(ast::VariableDeclaration::Type::Body));
+                        parameters.back()->domain = Domain::Symbolic;
+                        predicate.arguments.emplace_back(ast::Variable(parameters[j].get()));
+                        primePredicate.arguments.emplace_back(ast::Variable(parameters[j].get()));
+                    }
+
+                    ast::Implies primeAxiom = ast::Implies(std::move(predicate), std::move(primePredicate));
+                    ast::ForAll forAll_ = ast::ForAll(std::move(parameters), std::move(primeAxiom));
+                    ast::ScopedFormula scopedFormula = ast::ScopedFormula(std::move(forAll_), {});
+                    primeAxioms.emplace_back(std::move(scopedFormula));
+                }
+            }
+
 			break;
 	}
 
@@ -357,6 +402,8 @@ void translateHereAndThere(std::vector<ast::ScopedFormula> &&scopedFormulasA,
 			return finalFormulas;
 		};
 
+    auto finalPrimeAxioms = buildUniversallyClosedFormulas(std::move(primeAxioms));
+
 	auto finalFormulas = buildFinalFormulas();
 
 	const auto performDomainMapping =
@@ -375,8 +422,13 @@ void translateHereAndThere(std::vector<ast::ScopedFormula> &&scopedFormulasA,
 
 	// If requested, map both program and integer variables to integers
 	if (performDomainMapping())
-		for (auto &finalFormula : finalFormulas)
-			mapDomains(finalFormula, context);
+	{
+        for (auto &finalFormula : finalFormulas)
+            mapDomains(finalFormula, context);
+
+        for (auto &finalPrimeAxiom : finalPrimeAxioms)
+            mapDomains(finalPrimeAxiom, context);
+    }
 
 	// Print auxiliary definitions for mapping program and integer variables to even and odd integers
 	if (context.outputFormat == OutputFormat::TPTP)
@@ -396,6 +448,12 @@ tff(types, type, object: $tType).
 	// Print type annotations for function signatures
 	for (const auto &functionDeclaration : context.functionDeclarations)
 		printTypeAnnotation(*functionDeclaration, context, printContext);
+
+    for (auto &finalPrimeAxiom : finalPrimeAxioms)
+    {
+        printFormula(finalPrimeAxiom, FormulaType::Axiom, context, printContext);
+        context.logger.outputStream() << std::endl;
+    }
 
 	if (context.outputFormat == OutputFormat::TPTP)
 	{
