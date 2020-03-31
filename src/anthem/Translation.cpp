@@ -295,6 +295,137 @@ void translateCompletion(std::vector<ast::ScopedFormula> &&scopedFormulas, Conte
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// replace every predicate by primed version
+struct ReplacePredicatesVisitor
+{
+    static void visit(ast::And &and_, ast::Formula &, Context &context)
+    {
+        for (auto &argument : and_.arguments)
+        {
+            argument.accept(ReplacePredicatesVisitor(), argument, context);
+        }
+    }
+
+    static void visit(ast::Exists &exists, ast::Formula &, Context &context)
+    {
+        exists.argument.accept(ReplacePredicatesVisitor(), exists.argument, context);
+    }
+
+    static void visit(ast::ForAll &forAll, ast::Formula &, Context &context)
+    {
+        forAll.argument.accept(ReplacePredicatesVisitor(), forAll.argument, context);
+    }
+
+    static void visit(ast::Implies &implies, ast::Formula &, Context &context)
+    {
+        implies.antecedent.accept(ReplacePredicatesVisitor(), implies.antecedent, context);
+        implies.consequent.accept(ReplacePredicatesVisitor(), implies.consequent, context);
+    }
+
+    static void visit(ast::Not &not_, ast::Formula &, Context &context)
+    {
+        not_.argument.accept(ReplacePredicatesVisitor(), not_.argument, context);
+    }
+
+    static void visit(ast::Or &or_, ast::Formula &, Context &context)
+    {
+        for (auto &argument : or_.arguments)
+        {
+            argument.accept(ReplacePredicatesVisitor(), argument, context);
+        }
+    }
+
+    static void visit(ast::Predicate &predicate, ast::Formula &formula, Context &context)
+    {
+        ast::Predicate primePredicate(context.findOrCreatePrimePredicateDeclaration(&(predicate.declaration->name)[0], predicate.declaration->parameters.size(), context));
+        primePredicate.arguments = prepareCopy(predicate.arguments);
+        formula = std::move(primePredicate);
+    }
+
+    static void visit(ast::Biconditional &, ast::Formula &, Context &)
+    {
+    }
+
+    static void visit(ast::Boolean &, ast::Formula &, Context &)
+    {
+    }
+
+    static void visit(ast::Comparison &, ast::Formula &, Context &)
+    {
+    }
+
+    static void visit(ast::In &, ast::Formula &, Context &)
+    {
+    }
+
+};
+
+// replace negated predicates by primed version
+struct ReplaceNegatedPredicatesVisitor
+{
+    static void visit(ast::And &and_, ast::Formula &, Context &context)
+    {
+        for (auto &argument : and_.arguments)
+        {
+            argument.accept(ReplaceNegatedPredicatesVisitor(), argument, context);
+        }
+    }
+
+    static void visit(ast::Exists &exists, ast::Formula &, Context &context)
+    {
+        exists.argument.accept(ReplaceNegatedPredicatesVisitor(), exists.argument, context);
+    }
+
+    static void visit(ast::ForAll &forAll, ast::Formula &, Context &context)
+    {
+        forAll.argument.accept(ReplaceNegatedPredicatesVisitor(), forAll.argument, context);
+    }
+
+    static void visit(ast::Implies &implies, ast::Formula &, Context &context)
+    {
+        implies.antecedent.accept(ReplaceNegatedPredicatesVisitor(), implies.antecedent, context);
+        implies.consequent.accept(ReplaceNegatedPredicatesVisitor(), implies.consequent, context);
+    }
+
+    static void visit(ast::Not &not_, ast::Formula &, Context &context)
+    {
+        if (not_.argument.is<ast::Predicate>())
+            not_.argument.accept(ReplacePredicatesVisitor(), not_.argument, context);
+        not_.argument.accept(ReplaceNegatedPredicatesVisitor(), not_.argument, context);
+    }
+
+    static void visit(ast::Or &or_, ast::Formula &, Context &context)
+    {
+        for (auto &argument : or_.arguments)
+        {
+            argument.accept(ReplaceNegatedPredicatesVisitor(), argument, context);
+        }
+    }
+
+    static void visit(ast::Predicate &, ast::Formula &, Context &)
+    {
+    }
+
+    static void visit(ast::Biconditional &, ast::Formula &, Context &)
+    {
+    }
+
+    static void visit(ast::Boolean &, ast::Formula &, Context &)
+    {
+    }
+
+    static void visit(ast::Comparison &, ast::Formula &, Context &)
+    {
+    }
+
+    static void visit(ast::In &, ast::Formula &, Context &)
+    {
+    }
+
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void translateHereAndThere(std::vector<ast::ScopedFormula> &&scopedFormulasA,
 	std::optional<std::vector<ast::ScopedFormula>> &&scopedFormulasB, Context &context)
 {
@@ -302,6 +433,8 @@ void translateHereAndThere(std::vector<ast::ScopedFormula> &&scopedFormulasA,
 	auto &stream = context.logger.outputStream();
 
     std::vector<ast::ScopedFormula> primeAxioms;
+    std::vector<ast::ScopedFormula> mappedScopedFormulasA;
+    std::vector<ast::ScopedFormula> mappedScopedFormulasB;
 
 	switch (context.semantics)
 	{
@@ -309,7 +442,7 @@ void translateHereAndThere(std::vector<ast::ScopedFormula> &&scopedFormulasA,
 			context.logger.log(output::Priority::Info) << "output semantics: classical logic";
 			break;
 		case Semantics::LogicOfHereAndThere:
-			context.logger.log(output::Priority::Warning) << "output semantics: logic of here-and-there";
+			context.logger.log(output::Priority::Info) << "mapped to output semantics: classical logic";
 
 			auto size = context.predicateDeclarations.size();
 			for (int i = 0; i < static_cast<int>(size); i++)
@@ -353,6 +486,38 @@ void translateHereAndThere(std::vector<ast::ScopedFormula> &&scopedFormulasA,
                 }
             }
 
+			// map to classical logic
+
+			const auto mapToClassicalLogic =
+			    [](std::vector<ast::ScopedFormula> &&scopedFormulas, Context &context)
+                {
+			        // duplicate each formula and replace
+			        //  1) every negated predicate in one copy
+			        //  2) every predicate in the other copy
+
+                    std::vector<ast::ScopedFormula> mappedScopedFormulas;
+                    mappedScopedFormulas.reserve(2*scopedFormulas.size());
+
+                    for (auto &scopedFormula : scopedFormulas)
+                    {
+                        ast::Formula formulaCopy = prepareCopy(scopedFormula.formula);
+                        ast::VariableDeclarationPointers variableDeclarationPointersCopy = prepareCopy(scopedFormula.freeVariables);
+                        ast::ScopedFormula scopedFormulaCopy = ast::ScopedFormula(std::move(formulaCopy), std::move(variableDeclarationPointersCopy));
+
+                        scopedFormula.formula.accept(ReplaceNegatedPredicatesVisitor(), scopedFormula.formula, context);
+                        mappedScopedFormulas.emplace_back(std::move(scopedFormula));
+                        scopedFormulaCopy.formula.accept(ReplacePredicatesVisitor(), scopedFormulaCopy.formula, context);
+                        mappedScopedFormulas.emplace_back(std::move(scopedFormulaCopy));
+                    }
+
+                    return mappedScopedFormulas;
+                };
+
+            mappedScopedFormulasA = mapToClassicalLogic(std::move(scopedFormulasA), context);
+
+			if (scopedFormulasB)
+                mappedScopedFormulasB = mapToClassicalLogic(std::move(scopedFormulasB.value()), context);
+
 			break;
 	}
 
@@ -385,11 +550,11 @@ void translateHereAndThere(std::vector<ast::ScopedFormula> &&scopedFormulasA,
 		{
 			// If we’re just given one program, translate it to individual axioms
 			if (!scopedFormulasB)
-				return buildUniversallyClosedFormulas(std::move(scopedFormulasA));
+				return buildUniversallyClosedFormulas(std::move(mappedScopedFormulasA));
 
 			// If we’re given two programs A and B, translate them to a conjecture of the form “A <=> B”
-			auto universallyClosedFormulasA = buildUniversallyClosedFormulas(std::move(scopedFormulasA));
-			auto universallyClosedFormulasB = buildUniversallyClosedFormulas(std::move(scopedFormulasB.value()));
+			auto universallyClosedFormulasA = buildUniversallyClosedFormulas(std::move(mappedScopedFormulasA));
+			auto universallyClosedFormulasB = buildUniversallyClosedFormulas(std::move(mappedScopedFormulasB));
 
 			// Build the conjunctions of all formulas resulting from each program respectively
 			ast::And conjunctionA(std::move(universallyClosedFormulasA));

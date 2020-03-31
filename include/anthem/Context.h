@@ -62,7 +62,10 @@ struct Context
 	ast::PredicateDeclaration *findOrCreatePrimePredicateDeclaration(const char *name, size_t arity, Context &context)
 	{
         std::string primeName = name;
-        primeName.append("_");
+        if (context.outputFormat == OutputFormat::TPTP)
+            primeName.append("__prime__");
+        else
+            primeName.append("'");
 
 	    return context.findOrCreatePredicateDeclaration(&primeName[0], arity);
 	}
