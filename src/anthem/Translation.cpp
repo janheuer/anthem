@@ -440,6 +440,11 @@ void translateHereAndThere(std::vector<ast::ScopedFormula> &&scopedFormulasA,
 	{
 		case Semantics::ClassicalLogic:
 			context.logger.log(output::Priority::Info) << "output semantics: classical logic";
+
+			mappedScopedFormulasA = std::move(scopedFormulasA);
+			if (scopedFormulasB)
+			    mappedScopedFormulasB = std::move(scopedFormulasB.value());
+
 			break;
 		case Semantics::LogicOfHereAndThere:
 			context.logger.log(output::Priority::Info) << "mapped to output semantics: classical logic";
