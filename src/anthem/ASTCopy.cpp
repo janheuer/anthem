@@ -168,7 +168,7 @@ Variable prepareCopy(const Variable &other)
 
 VariableDeclaration prepareCopy(const VariableDeclaration &other)
 {
-	return VariableDeclaration(other.type, std::string(other.name));
+	return VariableDeclaration(other.type, other.domain, std::string(other.name));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

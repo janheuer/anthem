@@ -386,6 +386,13 @@ struct VariableDeclaration
 	{
 	}
 
+	explicit VariableDeclaration(Type type, Domain domain, std::string &&name)
+	:   type{type},
+	    domain{domain},
+	    name{std::move(name)}
+    {
+    }
+
 	VariableDeclaration(const VariableDeclaration &other) = delete;
 	VariableDeclaration &operator=(const VariableDeclaration &other) = delete;
 	VariableDeclaration(VariableDeclaration &&other) = default;
