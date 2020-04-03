@@ -433,17 +433,11 @@ void translateHereAndThere(std::vector<ast::ScopedFormula> &&scopedFormulasA,
 	auto &stream = context.logger.outputStream();
 
     std::vector<ast::ScopedFormula> primeAxioms;
-    std::vector<ast::ScopedFormula> mappedScopedFormulasA;
-    std::vector<ast::ScopedFormula> mappedScopedFormulasB;
 
 	switch (context.semantics)
 	{
 		case Semantics::ClassicalLogic:
 			context.logger.log(output::Priority::Info) << "output semantics: classical logic";
-
-			mappedScopedFormulasA = std::move(scopedFormulasA);
-			if (scopedFormulasB)
-			    mappedScopedFormulasB = std::move(scopedFormulasB.value());
 
 			break;
 		case Semantics::LogicOfHereAndThere:
@@ -491,38 +485,6 @@ void translateHereAndThere(std::vector<ast::ScopedFormula> &&scopedFormulasA,
                 }
             }
 
-			// map to classical logic
-
-			const auto mapToClassicalLogic =
-			    [](std::vector<ast::ScopedFormula> &&scopedFormulas, Context &context)
-                {
-			        // duplicate each formula and replace
-			        //  1) every negated predicate in one copy
-			        //  2) every predicate in the other copy
-
-                    std::vector<ast::ScopedFormula> mappedScopedFormulas;
-                    mappedScopedFormulas.reserve(2*scopedFormulas.size());
-
-                    for (auto &scopedFormula : scopedFormulas)
-                    {
-                        ast::Formula formulaCopy = prepareCopy(scopedFormula.formula);
-                        ast::VariableDeclarationPointers variableDeclarationPointersCopy = prepareCopy(scopedFormula.freeVariables);
-                        ast::ScopedFormula scopedFormulaCopy = ast::ScopedFormula(std::move(formulaCopy), std::move(variableDeclarationPointersCopy));
-
-                        scopedFormula.formula.accept(ReplaceNegatedPredicatesVisitor(), scopedFormula.formula, context);
-                        mappedScopedFormulas.emplace_back(std::move(scopedFormula));
-                        scopedFormulaCopy.formula.accept(ReplacePredicatesVisitor(), scopedFormulaCopy.formula, context);
-                        mappedScopedFormulas.emplace_back(std::move(scopedFormulaCopy));
-                    }
-
-                    return mappedScopedFormulas;
-                };
-
-            mappedScopedFormulasA = mapToClassicalLogic(std::move(scopedFormulasA), context);
-
-			if (scopedFormulasB)
-                mappedScopedFormulasB = mapToClassicalLogic(std::move(scopedFormulasB.value()), context);
-
 			break;
 	}
 
@@ -550,20 +512,67 @@ void translateHereAndThere(std::vector<ast::ScopedFormula> &&scopedFormulasA,
 			return universallyClosedFormulas;
 		};
 
+    const auto mapToClassicalLogic =
+            [](std::vector<ast::Formula> &&formulas, Context &context)
+            {
+                // duplicate each formula and replace
+                //  1) every negated predicate in one copy
+                //  2) every predicate in the other copy
+
+                std::vector<ast::Formula> mappedFormulas;
+                mappedFormulas.reserve(2*formulas.size());
+
+                for (auto &formula : formulas)
+                {
+                    // create copy of formula
+                    ast::Formula formulaCopy = prepareCopy(formula);
+
+                    // replace negated predicates
+                    formula.accept(ReplaceNegatedPredicatesVisitor(), formula, context);
+                    mappedFormulas.emplace_back(std::move(formula));
+                    // replace all predicates
+                    formulaCopy.accept(ReplacePredicatesVisitor(), formulaCopy, context);
+                    mappedFormulas.emplace_back(std::move(formulaCopy));
+                }
+
+                return mappedFormulas;
+            };
+
 	const auto buildFinalFormulas =
 		[&]()
 		{
 			// If we’re just given one program, translate it to individual axioms
 			if (!scopedFormulasB)
-				return buildUniversallyClosedFormulas(std::move(mappedScopedFormulasA));
+			{
+                if (context.semantics == Semantics::LogicOfHereAndThere)
+                    // Additionally map all formulas to classical logic
+                    return mapToClassicalLogic(buildUniversallyClosedFormulas(std::move(scopedFormulasA)), context);
+                else
+                    return buildUniversallyClosedFormulas(std::move(scopedFormulasA));
+            }
 
 			// If we’re given two programs A and B, translate them to a conjecture of the form “A <=> B”
-			auto universallyClosedFormulasA = buildUniversallyClosedFormulas(std::move(mappedScopedFormulasA));
-			auto universallyClosedFormulasB = buildUniversallyClosedFormulas(std::move(mappedScopedFormulasB));
+			auto universallyClosedFormulasA = buildUniversallyClosedFormulas(std::move(scopedFormulasA));
+			auto universallyClosedFormulasB = buildUniversallyClosedFormulas(std::move(scopedFormulasB.value()));
+
+			// Map all formulas to classical logic if needed
+			std::vector<ast::Formula> mappedUniversallyClosedFormulasA;
+            std::vector<ast::Formula> mappedUniversallyClosedFormulasB;
+
+			if (context.semantics == Semantics::LogicOfHereAndThere)
+            {
+                mappedUniversallyClosedFormulasA = mapToClassicalLogic(std::move(universallyClosedFormulasA), context);
+                mappedUniversallyClosedFormulasB = mapToClassicalLogic(std::move(universallyClosedFormulasB), context);
+            }
+			else
+            {
+			    mappedUniversallyClosedFormulasA = std::move(universallyClosedFormulasA);
+                mappedUniversallyClosedFormulasB = std::move(universallyClosedFormulasB);
+            }
 
 			// Build the conjunctions of all formulas resulting from each program respectively
-			ast::And conjunctionA(std::move(universallyClosedFormulasA));
-			ast::And conjunctionB(std::move(universallyClosedFormulasB));
+			ast::And conjunctionA(std::move(mappedUniversallyClosedFormulasA));
+			ast::And conjunctionB(std::move(mappedUniversallyClosedFormulasB));
 
 			std::vector<ast::Formula> finalFormulas;
 			finalFormulas.reserve(1);
