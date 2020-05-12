@@ -168,7 +168,7 @@ const auto printTypeAnnotation =
 					<< ", " << output::Keyword("type")
 					<< ", (" << symbolDeclaration.name << ": ";
 
-				if (!symbolDeclaration.parameters.empty())
+				if (symbolDeclaration.parameters.size() > 1)
 					stream << "(";
 
 				for (size_t i = 0; i < symbolDeclaration.parameters.size(); i++)
@@ -182,8 +182,12 @@ const auto printTypeAnnotation =
 					stream << output::Keyword("object");
 				}
 
-				if (!symbolDeclaration.parameters.empty())
-					stream << ") > ";
+				if (!symbolDeclaration.parameters.empty()){
+                    if (symbolDeclaration.parameters.size() == 1)
+                        stream << " > ";
+                    else
+                        stream << ") > ";
+				}
 
 				using PrintReturnTypeTrait = PrintReturnTypeTrait<typename std::remove_cv<
 					typename std::remove_reference<decltype(symbolDeclaration)>::type>::type>;
@@ -638,16 +642,16 @@ tff(types, type, object: $tType).
 	{
 		stream
 			<< R"(
-tff(types, type, (f__integer__: ($int) > object)).
-tff(types, type, (f__symbolic__: ($i) > object)).
+tff(types, type, (f__integer__: $int > object)).
+tff(types, type, (f__symbolic__: $i > object)).
 
 tff(types, type, (f__sum__: (object * object) > object)).
-tff(types, type, (f__unary_minus__: (object) > object)).
+tff(types, type, (f__unary_minus__: object > object)).
 tff(types, type, (f__difference__: (object * object) > object)).
 tff(types, type, (f__product__: (object * object) > object)).
 
-tff(types, type, (p__is_integer__: (object) > $o)).
-tff(types, type, (p__is_symbolic__: (object) > $o)).
+tff(types, type, (p__is_integer__: object > $o)).
+tff(types, type, (p__is_symbolic__: object > $o)).
 tff(types, type, (p__less_equal__: (object * object) > $o)).
 tff(types, type, (p__less__: (object * object) > $o)).
 tff(types, type, (p__greater_equal__: (object * object) > $o)).
