@@ -1,20 +1,24 @@
-# anthem [![GitHub Release](https://img.shields.io/github/release/potassco/anthem.svg?maxAge=3600)](https://github.com/potassco/anthem/releases) [![Build Status](https://img.shields.io/travis/potassco/anthem/master.svg?maxAge=3600&label=build%20%28master%29)](https://travis-ci.org/potassco/anthem?branch=master) [![Build Status](https://img.shields.io/travis/potassco/anthem/develop.svg?maxAge=3600&label=build%20%28develop%29)](https://travis-ci.org/potassco/anthem?branch=develop)
+# anthem
 
 > Translate answer set programs to first-order theorem prover language
 
 ## Overview
 
-`anthem` translates ASP programs (in the input language of [`clingo`](https://github.com/potassco/clingo)) to the language of first-order theorem provers such as [Prover9](https://www.cs.unm.edu/~mccune/mace4/).
+`anthem` translates ASP programs (in the input language of [`clingo`](https://github.com/potassco/clingo)) to the first-order logic. 
+The output can be formatted in either a human-readable format or the TPTP format for usage with automated theorem provers such as [`vampire`](https://github.com/vprover/vampire) or [`cvc4`](https://github.com/CVC4/CVC4).
 
 ## Usage
 
 ```bash
-$ anthem [--no-complete] [--no-simplify] [--no-detect-integers] file...
+$ anthem [options] file1 file2
 ```
 
-By default, `anthem` performs Clark’s completion on the translated formulas, detects which variables are integer, and simplifies the output by applying several basic transformation rules.
+By default, `anthem` uses the translation mode `here-and-there`.
+Given two ASP programs as input, `anthem` produces a formula asserting the strong equivalence of the two programs.
 
-These processing steps can be turned off with the options `--no-complete`, `--no-simplify`, and `--no-detect-integers`.
+By using the option `--output-format tptp` theorem provers such as [`vampire`](https://github.com/vprover/vampire) or [`cvc4`](https://github.com/CVC4/CVC4) can then be used on the output of `anthem` to verify the strong equivalence of the two input programs.
+
+Furthermore, `anthem` can use the mode `completion` to perform the Clark’s completion on the translated formulas.
 
 ## Building
 
@@ -22,7 +26,7 @@ These processing steps can be turned off with the options `--no-complete`, `--no
 After installing the dependencies, `anthem` is built with a C++17 compiler (GCC ≥ 7.3 or clang ≥ 5.0).
 
 ```bash
-$ git clone https://github.com/potassco/anthem.git
+$ git clone https://github.com/janheuer/anthem.git
 $ cd anthem
 $ git submodule update --init --recursive
 $ mkdir -p build/release
@@ -34,3 +38,4 @@ $ make
 ## Contributors
 
 * [Patrick Lühne](https://www.luehne.de)
+* Jan Heuer
