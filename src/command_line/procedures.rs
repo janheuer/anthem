@@ -198,6 +198,7 @@ pub fn main() -> Result<()> {
                         )?,
                         decomposition,
                         direction: fol::Direction::Forward,
+                        bypass_tightness,
                         simplify: !no_simplify,
                         break_equivalences: !no_eq_break,
                     }

@@ -7,8 +7,12 @@ use {
             with_warnings::{Result, WithWarnings},
         },
         simplifying::fol::{classic::CLASSIC, ht::HT, intuitionistic::INTUITIONISTIC},
-        syntax_tree::{asp, fol},
+        syntax_tree::{
+            asp,
+            fol::{self, Theory},
+        },
         translating::{
+            completion::completion,
             ordered_completion::{ordered_completion, ordered_completion_axioms},
             tau_star::tau_star,
         },
@@ -29,6 +33,7 @@ pub struct OrderedCompletionTask {
     pub specification: fol::Theory,
     pub decomposition: Decomposition,
     pub direction: fol::Direction,
+    pub bypass_tightness: bool,
     pub simplify: bool,
     pub break_equivalences: bool,
 }
@@ -40,8 +45,14 @@ impl Task for OrderedCompletionTask {
     fn decompose(self) -> Result<Vec<Problem>, Self::Warning, Self::Error> {
         let mut left = tau_star(self.program);
 
-        let oc_axioms = ordered_completion_axioms(left.clone());
-        left = ordered_completion(left).expect("tau_star did not create a completable theory");
+        let mut oc_axioms = Theory { formulas: vec![] };
+
+        if self.bypass_tightness {
+            left = completion(left).expect("tau_star did not create a completable theory");
+        } else {
+            oc_axioms = ordered_completion_axioms(left.clone());
+            left = ordered_completion(left).expect("tau_star did not create a completable theory");
+        }
 
         let mut right = self.specification;
 
