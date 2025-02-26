@@ -19,6 +19,7 @@ use {
             prover::{vampire::Vampire, Prover, Report, Status, Success},
             task::{
                 external_equivalence::ExternalEquivalenceTask,
+                ordered_completion::OrderedCompletionTask,
                 strong_equivalence::StrongEquivalenceTask, Task,
             },
         },
@@ -178,6 +179,31 @@ pub fn main() -> Result<()> {
                 }
                 .decompose()?
                 .report_warnings(),
+                Equivalence::OrderedCompletion => {
+                    if matches!(
+                        direction,
+                        fol::Direction::Universal | fol::Direction::Backward
+                    ) {
+                        println!("Verification of ordered completion currently only supports the forward direction");
+                    }
+
+                    OrderedCompletionTask {
+                        program: asp::Program::from_file(
+                            files.program().ok_or(anyhow!("no program was provided"))?,
+                        )?,
+                        specification: fol::Theory::from_file(
+                            files
+                                .specification()
+                                .ok_or(anyhow!("no specification was provided"))?,
+                        )?,
+                        decomposition,
+                        direction: fol::Direction::Forward,
+                        simplify: !no_simplify,
+                        break_equivalences: !no_eq_break,
+                    }
+                    .decompose()?
+                    .report_warnings()
+                }
             };
 
             if let Some(out_dir) = out_dir {

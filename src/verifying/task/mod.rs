@@ -1,4 +1,5 @@
 pub mod external_equivalence;
+pub mod ordered_completion;
 pub mod strong_equivalence;
 
 use crate::{convenience::with_warnings::Result, verifying::problem::Problem};
