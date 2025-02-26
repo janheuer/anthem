@@ -16,6 +16,33 @@ This is a complete reimplementation crafted by Zach Hansen and Tobias Stolzmann.
 Until recently, you would have found Patrick Lühne's version 1 here, which was discontinued and therefore moved to [anthem-1](https://github.com/potassco/anthem-1).
 We'd like to thank Patrick for the effort he put into his implementation and the kindness of resolving the naming conflict with us.
 
+## Ordered Completion Prototype
+This branch includes prototypical implementation of the ordered completion.
+For detail see master's thesis of Jan Heuer entitled "Ordered Completion for Non-Locally Tight mini-gringo Programs".
+Ordered completion is an extension of ordinary completion in order to also capture the semantics of programs that are not (locally) tight.
+
+The `translate` command of `anthem` includes a new option for the `with` argument to choose ordered completion.
+To use ordered completion run
+```
+   anthem translate --with ordered-completion theory.spec
+```
+
+Note that ordered completion, as is the case with ordinary completion, is applied to a theory.
+If you want to obtain the ordered completion of a logic program you should use the `tau-star` translation first as in the following command
+```
+   anthem translate --with tau-star program.lp | anthem translate --with ordered-completion
+```
+
+This branch also includes a prototypical implementation for verifying the ordered completion of a program.
+The inputs for this verification problem are a logic program `Π` and a theory `T`.
+Given these inputs anthem tries to verify that the formula `OC(Π) -> T` holds.
+This is done with the command
+```
+   anthem verify --equivalence ordered-completion p.lp t.spec
+```
+This verification mode only supports the `forward` direction.
+Passing the argument `--bypass-tightness` changes the verification problem to `Comp(Π) -> T`.
+
 ## License
 
 `anthem` is distributed under the terms of the MIT license.
