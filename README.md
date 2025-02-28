@@ -33,6 +33,8 @@ If you want to obtain the ordered completion of a logic program you should use t
    anthem translate --with tau-star program.lp | anthem translate --with ordered-completion
 ```
 
+Some example logic programs as well as their ordered completion produced by anthem are included in `res/examples/orderd_completion/translating`.
+
 This branch also includes a prototypical implementation for verifying the ordered completion of a program.
 The inputs for this verification problem are a logic program `Π` and a theory `T`.
 Given these inputs anthem tries to verify that the formula `OC(Π) -> T` holds.
@@ -42,6 +44,8 @@ This is done with the command
 ```
 This verification mode only supports the `forward` direction.
 Passing the argument `--bypass-tightness` changes the verification problem to `Comp(Π) -> T`.
+
+For some example verification problems see the directories `simple_non_tight` and `transitive_finite` in `res/examples/ordered_completion/`. See the respective `README.md` files for details on the problems.
 
 ## License
 
