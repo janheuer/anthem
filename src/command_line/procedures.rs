@@ -130,6 +130,19 @@ pub fn main() -> Result<()> {
             let files =
                 Files::sort(files).context("unable to sort the given files by their function")?;
 
+            let direction = match equivalence {
+                Equivalence::OrderedCompletion => {
+                    if matches!(
+                        direction,
+                        fol::Direction::Backward | fol::Direction::Universal
+                    ) {
+                        println!("Verification of ordered completion currently only supports the forward direction");
+                    }
+                    fol::Direction::Forward
+                }
+                _ => direction,
+            };
+
             let problems = match equivalence {
                 Equivalence::Strong => StrongEquivalenceTask {
                     left: asp::Program::from_file(
@@ -179,32 +192,23 @@ pub fn main() -> Result<()> {
                 }
                 .decompose()?
                 .report_warnings(),
-                Equivalence::OrderedCompletion => {
-                    if matches!(
-                        direction,
-                        fol::Direction::Universal | fol::Direction::Backward
-                    ) {
-                        println!("Verification of ordered completion currently only supports the forward direction");
-                    }
-
-                    OrderedCompletionTask {
-                        program: asp::Program::from_file(
-                            files.program().ok_or(anyhow!("no program was provided"))?,
-                        )?,
-                        specification: fol::Theory::from_file(
-                            files
-                                .specification()
-                                .ok_or(anyhow!("no specification was provided"))?,
-                        )?,
-                        decomposition,
-                        direction: fol::Direction::Forward,
-                        bypass_tightness,
-                        simplify: !no_simplify,
-                        break_equivalences: !no_eq_break,
-                    }
-                    .decompose()?
-                    .report_warnings()
+                Equivalence::OrderedCompletion => OrderedCompletionTask {
+                    program: asp::Program::from_file(
+                        files.program().ok_or(anyhow!("no program was provided"))?,
+                    )?,
+                    specification: fol::Theory::from_file(
+                        files
+                            .specification()
+                            .ok_or(anyhow!("no specification was provided"))?,
+                    )?,
+                    decomposition,
+                    direction: fol::Direction::Forward,
+                    bypass_tightness,
+                    simplify: !no_simplify,
+                    break_equivalences: !no_eq_break,
                 }
+                .decompose()?
+                .report_warnings(),
             };
 
             if let Some(out_dir) = out_dir {
@@ -277,9 +281,9 @@ pub fn main() -> Result<()> {
                 }
 
                 if success {
-                    print!("> Success! Anthem found a proof of equivalence.")
+                    print!("> Success! Anthem found a proof of the {direction} direction of the equivalence.")
                 } else {
-                    print!("> Failure! Anthem was unable to find a proof of equivalence.")
+                    print!("> Failure! Anthem was unable to find a proof of the {direction} direction of the equivalence.")
                 }
 
                 if !no_timing {
