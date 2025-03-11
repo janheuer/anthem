@@ -117,6 +117,8 @@ impl Prover for Vampire {
                 &self.time_limit.to_string(),
                 "--cores",
                 &self.cores().to_string(),
+                "--induction",
+                "int",
             ])
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
