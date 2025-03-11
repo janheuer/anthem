@@ -281,9 +281,11 @@ pub fn main() -> Result<()> {
                 }
 
                 if success {
-                    print!("> Success! Anthem found a proof of the {direction} direction of the equivalence.")
+                    print!("> Success! Anthem found a proof of the {direction} theorem.")
                 } else {
-                    print!("> Failure! Anthem was unable to find a proof of the {direction} direction of the equivalence.")
+                    print!(
+                        "> Failure! Anthem was unable to find a proof of the {direction} theorem."
+                    )
                 }
 
                 if !no_timing {
