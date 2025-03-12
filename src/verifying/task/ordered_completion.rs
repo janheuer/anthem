@@ -21,6 +21,7 @@ use {
             task::Task,
         },
     },
+    either::Either,
     std::convert::Infallible,
     thiserror::Error,
 };
@@ -30,7 +31,7 @@ pub enum OrderedCompletionTaskError {}
 
 pub struct OrderedCompletionTask {
     pub program: asp::Program,
-    pub specification: fol::Theory,
+    pub specification: Either<asp::Program, fol::Theory>,
     pub decomposition: Decomposition,
     pub direction: fol::Direction,
     pub bypass_tightness: bool,
@@ -54,7 +55,21 @@ impl Task for OrderedCompletionTask {
             left = ordered_completion(left).expect("tau_star did not create a completable theory");
         }
 
-        let mut right = self.specification;
+        let mut right: fol::Theory = match self.specification {
+            Either::Left(program) => {
+                let theory = tau_star(program);
+                if self.bypass_tightness {
+                    completion(theory).expect("tau_star did not create a completable theory")
+                } else {
+                    oc_axioms
+                        .formulas
+                        .extend(ordered_completion_axioms(theory.clone()));
+                    ordered_completion(theory)
+                        .expect("tau_star did not create a completable theory")
+                }
+            }
+            Either::Right(theory) => theory,
+        };
 
         if self.simplify {
             let mut portfolio = [INTUITIONISTIC, HT, CLASSIC].concat().into_iter().compose();

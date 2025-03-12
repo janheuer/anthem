@@ -130,19 +130,6 @@ pub fn main() -> Result<()> {
             let files =
                 Files::sort(files).context("unable to sort the given files by their function")?;
 
-            let direction = match equivalence {
-                Equivalence::OrderedCompletion => {
-                    if matches!(
-                        direction,
-                        fol::Direction::Backward | fol::Direction::Universal
-                    ) {
-                        println!("Verification of ordered completion currently only supports the forward direction");
-                    }
-                    fol::Direction::Forward
-                }
-                _ => direction,
-            };
-
             let problems = match equivalence {
                 Equivalence::Strong => StrongEquivalenceTask {
                     left: asp::Program::from_file(
@@ -196,13 +183,15 @@ pub fn main() -> Result<()> {
                     program: asp::Program::from_file(
                         files.program().ok_or(anyhow!("no program was provided"))?,
                     )?,
-                    specification: fol::Theory::from_file(
-                        files
-                            .specification()
-                            .ok_or(anyhow!("no specification was provided"))?,
-                    )?,
+                    specification: match files
+                        .specification()
+                        .ok_or(anyhow!("no specification was provided"))?
+                    {
+                        Either::Left(program) => Either::Left(asp::Program::from_file(program)?),
+                        Either::Right(theory) => Either::Right(fol::Theory::from_file(theory)?),
+                    },
                     decomposition,
-                    direction: fol::Direction::Forward,
+                    direction,
                     bypass_tightness,
                     simplify: !no_simplify,
                     break_equivalences: !no_eq_break,
