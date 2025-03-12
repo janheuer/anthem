@@ -37,7 +37,7 @@ anthem verify --equivalence ordered-completion p.lp t.spec
 This verification mode only supports the `forward` direction.
 Passing the argument `--bypass-tightness` changes the verification problem to `Comp(Π) -> T`.
 
-For some example verification problems see the directories `tight`, `non_tight`, `locally_tight` and `transitive_finite` in [`res/examples/ordered_completion/`](res/examples/ordered_completion). See the respective `README.md` files for details on the problems.
+For some example verification problems see the directories `tight`, `non_tight`, `locally_tight`, `transitive`, `backward` and `equivalence` in [`res/examples/ordered_completion/`](res/examples/ordered_completion). See the respective `README.md` files for details on the problems.
 
 ## Where's anthem 1?
 
