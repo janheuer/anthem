@@ -61,9 +61,14 @@ impl Task for OrderedCompletionTask {
                 if self.bypass_tightness {
                     completion(theory).expect("tau_star did not create a completable theory")
                 } else {
-                    oc_axioms
+                    let _ = ordered_completion_axioms(theory.clone())
                         .formulas
-                        .extend(ordered_completion_axioms(theory.clone()));
+                        .into_iter()
+                        .map(|f| {
+                            if !oc_axioms.formulas.contains(&f) {
+                                oc_axioms.formulas.push(f);
+                            }
+                        });
                     ordered_completion(theory)
                         .expect("tau_star did not create a completable theory")
                 }
