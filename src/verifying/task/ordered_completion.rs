@@ -124,7 +124,7 @@ impl Task for OrderedCompletionTask {
             fol::Direction::Universal | fol::Direction::Backward
         ) {
             problems.push(
-                Problem::with_name("forward")
+                Problem::with_name("backward")
                     .add_theory(oc_axioms, |i, formula| AnnotatedFormula {
                         name: format!("oc_axiom_{i}"),
                         role: Role::Axiom,
