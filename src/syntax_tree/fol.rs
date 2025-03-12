@@ -957,8 +957,8 @@ impl_node!(Role, Format, RoleParser);
 
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Hash, ValueEnum)]
 pub enum Direction {
-    Universal,
     #[default]
+    Universal,
     Forward,
     Backward,
 }
