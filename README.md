@@ -10,8 +10,8 @@ Check out the [API documentation](https://docs.rs/anthem/) for the available fun
 
 ## Ordered Completion Prototype
 This branch includes prototypical implementation of the ordered completion.
-For details see the master's thesis of Jan Heuer entitled "Ordered Completion for Non-Locally Tight mini-gringo Programs".
-Ordered completion is an extension of ordinary completion in order to also capture the semantics of programs that are not (locally) tight.
+For details see the master's thesis of Jan Heuer entitled ["Ordered Completion for Non-Locally Tight mini-gringo Programs"](https://arxiv.org/abs/2504.14252).
+Ordered completion is an extension of ordinary completion in order to capture the semantics of programs that are not (locally) tight.
 
 The `translate` command of `anthem` includes a new option for the `with` argument to choose ordered completion.
 To use ordered completion run
@@ -32,12 +32,16 @@ The inputs for this verification problem are a logic program `Π` and a theory `
 Given these inputs anthem tries to verify that the formula `OC(Π) -> T` holds.
 This is done with the command
 ```
-anthem verify --equivalence ordered-completion p.lp t.spec
+anthem verify --equivalence ordered-completion --direction forward p.lp t.spec
 ```
-This verification mode only supports the `forward` direction.
 Passing the argument `--bypass-tightness` changes the verification problem to `Comp(Π) -> T`.
 
-For some example verification problems see the directories `tight`, `non_tight`, `locally_tight`, `transitive`, `backward` and `equivalence` in [`res/examples/ordered_completion/`](res/examples/ordered_completion). See the respective `README.md` files for details on the problems.
+For some example verification problems see the directories `tight`, `non_tight`, `locally_tight` and `transitive` in [`res/examples/ordered_completion/`](res/examples/ordered_completion). See the respective `README.md` files for details on the problems.
+
+Alternatively, instead of supplying a theory `T` we can also use a second logic program.
+In addition to just proving the `forward` direction, we can also prove the `backward` or `universal` direction.
+However, note that for these verification problems (i.e., using a direction different from “forward” and/or a second logic program instead of a theory) are somewhat limited in the conclusions we can draw from them.
+For examples of this kind see the directories `backward` and `equivalence` in [`res/examples/ordered_completion/`](res/examples/ordered_completion).
 
 ## Where's anthem 1?
 

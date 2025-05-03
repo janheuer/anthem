@@ -12,7 +12,7 @@ forall X (not p(X) and not q(X)).
 
 ## Usage
 ```
-anthem verify --equivalence ordered-completion --no-simplify left.lp right.spec
+anthem verify --equivalence ordered-completion --direction forward non_tight.lp non_tight.spec
 ```
 
 ## Output

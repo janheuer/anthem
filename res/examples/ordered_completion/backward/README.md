@@ -18,7 +18,7 @@ I.e. that the ordered completion of our program follows from the above formula.
 ## Usage
 
 ```
-anthem verify --equivalence ordered-completion left.lp right.spec --direction backward
+anthem verify --equivalence ordered-completion --direction backward backward.lp backward.spec
 ```
 
 ## Output

@@ -18,7 +18,7 @@ We want to check whether their ordered completions are equivalent.
 ## Usage
 
 ```
-anthem verify --equivalence ordered-completion right.lp left.lp
+anthem verify --equivalence ordered-completion equivalence.1.lp equivalence.2.lp
 ```
 
 ## Output

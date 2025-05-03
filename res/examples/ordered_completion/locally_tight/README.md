@@ -12,7 +12,7 @@ forall X$ (X$ >= 1 -> p(X$)).
 
 ## Usage
 ```
-anthem verify --equivalence ordered-completion left.lp right.spec
+anthem verify --equivalence ordered-completion --direction forward locally_tight.lp locally_tight.spec
 ```
 
 ## Output

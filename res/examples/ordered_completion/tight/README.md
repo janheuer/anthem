@@ -15,7 +15,7 @@ forall X p(X).
 
 ## Usage
 ```
-anthem verify --equivalence ordered-completion left.lp right.spec
+anthem verify --equivalence ordered-completion --direction forward tight.lp tight.spec
 ```
 
 ## Output
