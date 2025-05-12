@@ -8,7 +8,6 @@ use crate::{
 
 pub const INTUITIONISTIC: &[fn(Formula) -> Formula] = &[
     evaluate_comparisons,
-    apply_negation_definition,
     apply_reverse_implication_definition,
     apply_equivalence_definition,
     remove_identities,
